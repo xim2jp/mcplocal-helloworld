@@ -1,0 +1,16 @@
+{
+  "name": "minimal-mcp-server",
+  "version": "1.0.0",
+  "description": "世界最小のMCPサーバー - Hello World!を返すだけ",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.7.0"
+  },
+  "keywords": ["mcp", "server", "minimal", "hello-world"],
+  "author": "",
+  "license": "MIT"
+}

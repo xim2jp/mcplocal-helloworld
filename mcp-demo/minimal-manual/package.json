@@ -1,0 +1,12 @@
+{
+  "name": "minimal-mcp-server-manual",
+  "version": "1.0.0",
+  "description": "世界最小のMCPサーバー - 手動JSON-RPC実装版",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["mcp", "server", "minimal", "hello-world", "json-rpc"],
+  "author": "",
+  "license": "MIT"
+}
