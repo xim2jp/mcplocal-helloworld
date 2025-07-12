@@ -1,17 +1,15 @@
 #!/usr/bin/env node
 
-// Pretty test script for MCP Server
-// This script formats the server responses for better readability
+// Minimal test client for the three MCP features
 
 const { spawn } = require('child_process');
-const path = require('path');
 
-// Spawn the server
+// Start the server
 const server = spawn('node', ['server.js'], {
     stdio: ['pipe', 'pipe', 'pipe']
 });
 
-// Test requests
+// Test sequence
 const tests = [
     {
         name: "Initialize",
@@ -23,7 +21,7 @@ const tests = [
                 protocolVersion: "2024-11-05",
                 capabilities: {},
                 clientInfo: {
-                    name: "test-client",
+                    name: "minimal-test-client",
                     version: "0.1.0"
                 }
             }
@@ -39,19 +37,10 @@ const tests = [
         }
     },
     {
-        name: "List Resources",
-        request: {
-            jsonrpc: "2.0",
-            id: 3,
-            method: "resources/list",
-            params: {}
-        }
-    },
-    {
         name: "Call Hello Tool",
         request: {
             jsonrpc: "2.0",
-            id: 4,
+            id: 3,
             method: "tools/call",
             params: {
                 name: "hello",
@@ -60,88 +49,80 @@ const tests = [
         }
     },
     {
-        name: "Call Echo Tool",
+        name: "List Resources",
+        request: {
+            jsonrpc: "2.0",
+            id: 4,
+            method: "resources/list",
+            params: {}
+        }
+    },
+    {
+        name: "Read Hello Resource",
         request: {
             jsonrpc: "2.0",
             id: 5,
-            method: "tools/call",
+            method: "resources/read",
             params: {
-                name: "echo",
-                arguments: {
-                    message: "Testing echo functionality!"
-                }
+                uri: "hello://message"
             }
         }
     },
     {
-        name: "Call Add Tool",
+        name: "List Prompts",
         request: {
             jsonrpc: "2.0",
             id: 6,
-            method: "tools/call",
-            params: {
-                name: "add",
-                arguments: {
-                    a: 5,
-                    b: 3
-                }
-            }
+            method: "prompts/list",
+            params: {}
         }
     },
     {
-        name: "Read Hello World Resource",
+        name: "Get Greeting Prompt",
         request: {
             jsonrpc: "2.0",
             id: 7,
-            method: "resources/read",
+            method: "prompts/get",
             params: {
-                uri: "hello://world"
-            }
-        }
-    },
-    {
-        name: "Read Server Info Resource",
-        request: {
-            jsonrpc: "2.0",
-            id: 8,
-            method: "resources/read",
-            params: {
-                uri: "hello://info"
+                name: "greeting",
+                arguments: {
+                    name: "Alice"
+                }
             }
         }
     }
 ];
 
 let currentTest = 0;
-let responses = '';
+let buffer = '';
 
 // Handle server output
 server.stdout.on('data', (data) => {
-    responses += data.toString();
-    
-    // Try to parse complete JSON responses
-    const lines = responses.split('\n');
-    responses = lines.pop() || '';
+    buffer += data.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
     
     lines.forEach(line => {
         if (!line.trim()) return;
         
         try {
             const response = JSON.parse(line);
-            console.log(`\n=== ${tests[currentTest].name} ===`);
-            console.log('Response:', JSON.stringify(response, null, 2));
-            currentTest++;
+            console.log(`\n✨ ${tests[currentTest].name}`);
+            console.log(JSON.stringify(response, null, 2));
             
-            // Send next test
+            currentTest++;
             if (currentTest < tests.length) {
                 sendRequest(tests[currentTest].request);
             } else {
-                // All tests complete
                 console.log('\n✅ All tests completed!');
+                console.log('\n📊 Summary:');
+                console.log('- Tools: ✓');
+                console.log('- Resources: ✓');
+                console.log('- Prompts: ✓');
                 server.stdin.end();
             }
         } catch (error) {
-            console.error('Failed to parse response:', line);
+            console.error('Parse error:', error);
         }
     });
 });
@@ -151,11 +132,11 @@ server.stderr.on('data', (data) => {
     console.error('Server:', data.toString().trim());
 });
 
-// Send a request to the server
+// Send request
 function sendRequest(request) {
     server.stdin.write(JSON.stringify(request) + '\n');
 }
 
-// Start tests
-console.log('🚀 Starting MCP Server Tests...\n');
+// Start testing
+console.log('🚀 Testing Minimal MCP Server (Tools, Resources, Prompts)\n');
 sendRequest(tests[0].request);

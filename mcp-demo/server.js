@@ -1,22 +1,20 @@
 #!/usr/bin/env node
 
-// MCP Server - JSON-RPC Implementation
-// This server implements the MCP protocol with tools, resources, and protocol info
+// Minimal MCP Server - JSON-RPC Implementation
+// Implements the three core MCP features: tools, resources, and prompts
 
-// Set encoding for stdin to handle text data
 process.stdin.setEncoding('utf8');
 
-// Buffer to handle partial JSON messages
+// Buffer for handling partial JSON messages
 let buffer = '';
 
-// Server capabilities
+// Server information
 const serverInfo = {
-    name: "hello-mcp-server",
-    version: "0.1.0",
-    protocolVersion: "2024-11-05"
+    name: "minimal-mcp-server",
+    version: "0.1.0"
 };
 
-// Available tools
+// 1. Tools - Actions the server can perform
 const tools = [
     {
         name: "hello",
@@ -26,54 +24,31 @@ const tools = [
             properties: {},
             required: []
         }
-    },
-    {
-        name: "echo", 
-        description: "Echoes back the input message",
-        inputSchema: {
-            type: "object",
-            properties: {
-                message: {
-                    type: "string",
-                    description: "Message to echo back"
-                }
-            },
-            required: ["message"]
-        }
-    },
-    {
-        name: "add",
-        description: "Adds two numbers",
-        inputSchema: {
-            type: "object",
-            properties: {
-                a: {
-                    type: "number",
-                    description: "First number"
-                },
-                b: {
-                    type: "number", 
-                    description: "Second number"
-                }
-            },
-            required: ["a", "b"]
-        }
     }
 ];
 
-// Available resources
+// 2. Resources - Data the server can provide
 const resources = [
     {
-        uri: "hello://world",
-        name: "Hello World Resource",
-        description: "A simple hello world resource",
+        uri: "hello://message",
+        name: "Hello Message",
+        description: "A simple hello world message",
         mimeType: "text/plain"
-    },
+    }
+];
+
+// 3. Prompts - Prompt templates the server can provide
+const prompts = [
     {
-        uri: "hello://info",
-        name: "Server Info",
-        description: "Information about this MCP server",
-        mimeType: "application/json"
+        name: "greeting",
+        description: "A greeting prompt template",
+        arguments: [
+            {
+                name: "name",
+                description: "Name to greet",
+                required: true
+            }
+        ]
     }
 ];
 
@@ -82,213 +57,167 @@ function handleRequest(request) {
     try {
         const { jsonrpc, id, method, params } = request;
         
-        // Validate JSON-RPC version
+        // Basic validation
         if (jsonrpc !== "2.0") {
-            return {
-                jsonrpc: "2.0",
-                id,
-                error: {
-                    code: -32600,
-                    message: "Invalid Request",
-                    data: "JSON-RPC version must be 2.0"
-                }
-            };
+            return createError(id, -32600, "Invalid Request");
         }
 
         // Route to appropriate handler
         switch (method) {
             case "initialize":
-                return handleInitialize(id, params);
-            case "tools/list":
-                return handleListTools(id);
-            case "tools/call":
-                return handleCallTool(id, params);
-            case "resources/list":
-                return handleListResources(id);
-            case "resources/read":
-                return handleReadResource(id, params);
-            default:
                 return {
                     jsonrpc: "2.0",
                     id,
-                    error: {
-                        code: -32601,
-                        message: "Method not found",
-                        data: `Unknown method: ${method}`
+                    result: {
+                        protocolVersion: "2024-11-05",
+                        capabilities: {
+                            tools: {},
+                            resources: {},
+                            prompts: {}
+                        },
+                        serverInfo
                     }
                 };
+
+            case "tools/list":
+                return {
+                    jsonrpc: "2.0",
+                    id,
+                    result: { tools }
+                };
+
+            case "tools/call":
+                return handleToolCall(id, params);
+
+            case "resources/list":
+                return {
+                    jsonrpc: "2.0",
+                    id,
+                    result: { resources }
+                };
+
+            case "resources/read":
+                return handleResourceRead(id, params);
+
+            case "prompts/list":
+                return {
+                    jsonrpc: "2.0",
+                    id,
+                    result: { prompts }
+                };
+
+            case "prompts/get":
+                return handlePromptGet(id, params);
+
+            default:
+                return createError(id, -32601, "Method not found");
         }
     } catch (error) {
+        return createError(request.id || null, -32603, "Internal error", error.message);
+    }
+}
+
+// Handle tool execution
+function handleToolCall(id, params) {
+    const { name } = params;
+    
+    if (name === "hello") {
         return {
             jsonrpc: "2.0",
-            id: request.id || null,
-            error: {
-                code: -32603,
-                message: "Internal error",
-                data: error.message
+            id,
+            result: {
+                content: [
+                    {
+                        type: "text",
+                        text: "hello world"
+                    }
+                ]
             }
         };
     }
-}
-
-// Handle initialize request
-function handleInitialize(id, params) {
-    return {
-        jsonrpc: "2.0",
-        id,
-        result: {
-            protocolVersion: serverInfo.protocolVersion,
-            capabilities: {
-                tools: {},
-                resources: {}
-            },
-            serverInfo
-        }
-    };
-}
-
-// Handle list tools request
-function handleListTools(id) {
-    return {
-        jsonrpc: "2.0",
-        id,
-        result: {
-            tools
-        }
-    };
-}
-
-// Handle tool call request
-function handleCallTool(id, params) {
-    const { name, arguments: args } = params;
     
-    switch (name) {
-        case "hello":
-            return {
-                jsonrpc: "2.0",
-                id,
-                result: {
-                    content: [
-                        {
-                            type: "text",
-                            text: "hello world"
-                        }
-                    ]
-                }
-            };
-        case "echo":
-            return {
-                jsonrpc: "2.0",
-                id,
-                result: {
-                    content: [
-                        {
-                            type: "text",
-                            text: args.message || ""
-                        }
-                    ]
-                }
-            };
-        case "add":
-            const sum = (args.a || 0) + (args.b || 0);
-            return {
-                jsonrpc: "2.0",
-                id,
-                result: {
-                    content: [
-                        {
-                            type: "text",
-                            text: `${args.a} + ${args.b} = ${sum}`
-                        }
-                    ]
-                }
-            };
-        default:
-            return {
-                jsonrpc: "2.0",
-                id,
-                error: {
-                    code: -32602,
-                    message: "Invalid params",
-                    data: `Unknown tool: ${name}`
-                }
-            };
-    }
+    return createError(id, -32602, "Invalid params", `Unknown tool: ${name}`);
 }
 
-// Handle list resources request
-function handleListResources(id) {
-    return {
-        jsonrpc: "2.0",
-        id,
-        result: {
-            resources
-        }
-    };
-}
-
-// Handle read resource request
-function handleReadResource(id, params) {
+// Handle resource reading
+function handleResourceRead(id, params) {
     const { uri } = params;
     
-    switch (uri) {
-        case "hello://world":
-            return {
-                jsonrpc: "2.0",
-                id,
-                result: {
-                    contents: [
-                        {
-                            uri,
-                            mimeType: "text/plain",
-                            text: "Hello, World! This is a simple MCP resource."
-                        }
-                    ]
-                }
-            };
-        case "hello://info":
-            return {
-                jsonrpc: "2.0",
-                id,
-                result: {
-                    contents: [
-                        {
-                            uri,
-                            mimeType: "application/json",
-                            text: JSON.stringify(serverInfo, null, 2)
-                        }
-                    ]
-                }
-            };
-        default:
-            return {
-                jsonrpc: "2.0",
-                id,
-                error: {
-                    code: -32602,
-                    message: "Invalid params",
-                    data: `Unknown resource: ${uri}`
-                }
-            };
+    if (uri === "hello://message") {
+        return {
+            jsonrpc: "2.0",
+            id,
+            result: {
+                contents: [
+                    {
+                        uri,
+                        mimeType: "text/plain",
+                        text: "Hello, World! This is a minimal MCP resource."
+                    }
+                ]
+            }
+        };
     }
+    
+    return createError(id, -32602, "Invalid params", `Unknown resource: ${uri}`);
+}
+
+// Handle prompt retrieval
+function handlePromptGet(id, params) {
+    const { name, arguments: args } = params;
+    
+    if (name === "greeting") {
+        const userName = args?.name || "User";
+        return {
+            jsonrpc: "2.0",
+            id,
+            result: {
+                description: "Greeting prompt",
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: `Please greet ${userName} in a friendly way.`
+                        }
+                    }
+                ]
+            }
+        };
+    }
+    
+    return createError(id, -32602, "Invalid params", `Unknown prompt: ${name}`);
+}
+
+// Create error response
+function createError(id, code, message, data = undefined) {
+    const error = {
+        jsonrpc: "2.0",
+        id,
+        error: {
+            code,
+            message
+        }
+    };
+    if (data !== undefined) {
+        error.error.data = data;
+    }
+    return error;
 }
 
 // Send response
 function sendResponse(response) {
-    const message = JSON.stringify(response) + '\n';
-    process.stdout.write(message);
+    process.stdout.write(JSON.stringify(response) + '\n');
 }
 
-// Handle incoming data from stdin
+// Handle incoming data
 process.stdin.on('data', (data) => {
-    // Add data to buffer
     buffer += data.toString();
     
     // Process complete lines
     const lines = buffer.split('\n');
     buffer = lines.pop() || '';
     
-    // Process each complete line as a JSON-RPC request
     lines.forEach(line => {
         const trimmed = line.trim();
         if (!trimmed) return;
@@ -298,30 +227,19 @@ process.stdin.on('data', (data) => {
             const response = handleRequest(request);
             sendResponse(response);
         } catch (error) {
-            // Send parse error
-            sendResponse({
-                jsonrpc: "2.0",
-                id: null,
-                error: {
-                    code: -32700,
-                    message: "Parse error",
-                    data: error.message
-                }
-            });
+            sendResponse(createError(null, -32700, "Parse error", error.message));
         }
     });
 });
 
-// Handle errors
+// Handle errors and exit
 process.stdin.on('error', (err) => {
-    console.error('Error reading from stdin:', err);
+    console.error('Error:', err);
 });
 
-// Handle stdin close
 process.stdin.on('end', () => {
-    console.error('stdin closed');
     process.exit(0);
 });
 
-// Log startup message to stderr
-console.error('MCP Server started. Waiting for JSON-RPC requests...');
+// Log startup to stderr
+console.error('Minimal MCP Server started. Ready for JSON-RPC requests.');

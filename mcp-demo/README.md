@@ -1,83 +1,62 @@
-# MCP Server Demo - Complete Implementation
+# Minimal MCP Server
 
-これは、JSON-RPCベースのMCP（Model Context Protocol）サーバーの完全な実装例です。tools、resources、protocolの3つの主要機能をすべて実装しています。
+MCP（Model Context Protocol）の3つのコア機能を実装した最小限のサーバーです。
 
-## 概要
+## 📌 MCPの3つの主要機能
 
-このMCPサーバーは以下の機能を提供します：
+### 1. 🛠️ Tools（ツール）
+外部アクションやコマンドを実行する機能
+- 例：計算、ファイル操作、API呼び出しなど
 
-### 🛠️ Tools（ツール）
-- **hello** - "hello world"を返す
-- **echo** - 入力されたメッセージをエコーバック
-- **add** - 2つの数値を加算
+### 2. 📦 Resources（リソース）
+データやファイルを提供する機能
+- 例：設定ファイル、ドキュメント、データベース内容など
 
-### 📦 Resources（リソース）
-- **hello://world** - シンプルなテキストリソース
-- **hello://info** - サーバー情報のJSONリソース
+### 3. � Prompts（プロンプト）
+再利用可能なプロンプトテンプレートを提供する機能
+- 例：定型的な質問、タスクのテンプレートなど
 
-### 🔧 Protocol（プロトコル）
-- JSON-RPC 2.0ベースの通信
-- プロトコルバージョン: 2024-11-05
-- 標準MCPメソッドの実装
+## 🚀 クイックスタート
 
-## 必要な環境
-
-- Node.js (v14以降推奨)
-
-## セットアップ手順
-
-### 1. プロジェクトのクローンまたは作成
+### 1. セットアップ
 
 ```bash
-# ディレクトリを作成
-mkdir mcp-demo
-cd mcp-demo
-
-# ファイルを配置
-```
-
-### 2. 実行権限の付与
-
-```bash
+# 実行権限を付与
 chmod +x server.js
-chmod +x test-client.js
-chmod +x test-pretty.js
+chmod +x test-minimal.js
 ```
 
-## 🧪 テスト方法
-
-### 基本的なテスト
+### 2. サーバーのテスト
 
 ```bash
-# シンプルなテストクライアントで全機能をテスト
-node test-client.js | node server.js
+# 最小限のテストを実行
+node test-minimal.js
 ```
 
-### 見やすい形式でのテスト
+### 3. 手動でのテスト
 
 ```bash
-# フォーマットされた出力でテスト
-node test-pretty.js
+# サーバーを起動して、個別にコマンドを送信
+node server.js
+
+# 別のターミナルで以下のコマンドを実行：
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | node server.js
 ```
 
-### 個別のリクエストテスト
+## 📋 実装内容
 
-```bash
-# 初期化
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | node server.js
+### Tools
+- **hello** - "hello world"を返すシンプルなツール
 
-# ツール一覧
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | node server.js
+### Resources  
+- **hello://message** - 基本的なテキストメッセージ
 
-# リソース一覧
-echo '{"jsonrpc":"2.0","id":3,"method":"resources/list","params":{}}' | node server.js
-```
+### Prompts
+- **greeting** - 名前を受け取って挨拶プロンプトを生成
 
-## 📋 利用可能なメソッド
+## � API リファレンス
 
-### 1. initialize
-サーバーを初期化し、プロトコルバージョンと機能を取得
-
+### Initialize（初期化）
 ```json
 {
   "jsonrpc": "2.0",
@@ -94,9 +73,9 @@ echo '{"jsonrpc":"2.0","id":3,"method":"resources/list","params":{}}' | node ser
 }
 ```
 
-### 2. tools/list
-利用可能なツールの一覧を取得
+### Tools（ツール機能）
 
+#### ツール一覧取得
 ```json
 {
   "jsonrpc": "2.0",
@@ -106,26 +85,22 @@ echo '{"jsonrpc":"2.0","id":3,"method":"resources/list","params":{}}' | node ser
 }
 ```
 
-### 3. tools/call
-ツールを実行
-
+#### ツール実行
 ```json
 {
   "jsonrpc": "2.0",
   "id": 3,
   "method": "tools/call",
   "params": {
-    "name": "echo",
-    "arguments": {
-      "message": "Hello, MCP!"
-    }
+    "name": "hello",
+    "arguments": {}
   }
 }
 ```
 
-### 4. resources/list
-利用可能なリソースの一覧を取得
+### Resources（リソース機能）
 
+#### リソース一覧取得
 ```json
 {
   "jsonrpc": "2.0",
@@ -135,147 +110,122 @@ echo '{"jsonrpc":"2.0","id":3,"method":"resources/list","params":{}}' | node ser
 }
 ```
 
-### 5. resources/read
-リソースの内容を読み取り
-
+#### リソース読み取り
 ```json
 {
   "jsonrpc": "2.0",
   "id": 5,
   "method": "resources/read",
   "params": {
-    "uri": "hello://world"
+    "uri": "hello://message"
   }
 }
 ```
 
-## 🔌 Claude Desktopとの連携
+### Prompts（プロンプト機能）
 
-### 設定手順
+#### プロンプト一覧取得
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "prompts/list",
+  "params": {}
+}
+```
 
-1. **Claude Desktopを開く**
+#### プロンプト取得
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "prompts/get",
+  "params": {
+    "name": "greeting",
+    "arguments": {
+      "name": "Alice"
+    }
+  }
+}
+```
 
-2. **開発者設定にアクセス**
-   - メニューから `Settings` → `Developer Settings` を選択
+## 🔧 Claude Desktopでの使用
 
-3. **MCPサーバーの設定**
-   - `Custom MCP Server Command` フィールドに以下を入力：
+1. **Settings → Developer Settings**を開く
+2. **Custom MCP Server Command**に以下を入力：
    ```
    node /workspace/mcp-demo/server.js
    ```
-   ※ このパスは実際のserver.jsの場所に合わせて変更してください
-   ※ または相対パスで指定することも可能です
-
-4. **Claude Desktopを再起動**
-   - 設定を反映させるため、アプリケーションを完全に終了してから再起動
-
-5. **動作確認**
-   - 新しい会話を開始
-   - MCPサーバーとの通信が確立されているか確認
+3. Claude Desktopを再起動
 
 ## 📂 ファイル構成
 
 ```
 mcp-demo/
-├── server.js        # MCPサーバー本体（JSON-RPC実装）
-├── test-client.js   # テスト用クライアント（全機能テスト）
-├── test-pretty.js   # 見やすい形式でのテストスクリプト
-└── README.md        # このファイル
+├── server.js         # 最小限のMCPサーバー実装
+├── test-minimal.js   # 3つの機能をテストするスクリプト
+└── README.md         # このファイル
 ```
 
-## 🏗️ アーキテクチャ
+## � このサーバーの特徴
 
-### JSON-RPC通信
+- **最小限の実装** - MCPの3つのコア機能のみ
+- **学習に最適** - シンプルで理解しやすい
+- **拡張可能** - 新しいツール、リソース、プロンプトを簡単に追加
 
-MCPサーバーはJSON-RPC 2.0プロトコルを使用：
-- リクエスト: `{"jsonrpc":"2.0","id":1,"method":"...","params":{...}}`
-- レスポンス: `{"jsonrpc":"2.0","id":1,"result":{...}}`
-- エラー: `{"jsonrpc":"2.0","id":1,"error":{...}}`
-
-### メッセージフロー
-
-1. クライアントがJSON-RPCリクエストを標準入力に送信
-2. サーバーがリクエストをパースして処理
-3. サーバーがJSON-RPCレスポンスを標準出力に送信
-4. 各メッセージは改行文字で区切られる
-
-## 🚀 拡張のアイデア
+## � 拡張例
 
 ### 新しいツールの追加
 
 ```javascript
-// tools配列に新しいツールを追加
-{
-    name: "greet",
-    description: "Greets a person by name",
+tools.push({
+    name: "calculate",
+    description: "Simple calculator",
     inputSchema: {
         type: "object",
         properties: {
-            name: {
+            expression: {
                 type: "string",
-                description: "Person's name"
+                description: "Math expression to evaluate"
             }
         },
-        required: ["name"]
+        required: ["expression"]
     }
-}
+});
 ```
 
 ### 新しいリソースの追加
 
 ```javascript
-// resources配列に新しいリソースを追加
-{
-    uri: "hello://time",
-    name: "Current Time",
-    description: "Returns the current time",
-    mimeType: "text/plain"
-}
+resources.push({
+    uri: "config://settings",
+    name: "Configuration",
+    description: "Application settings",
+    mimeType: "application/json"
+});
 ```
 
-### エラーハンドリングの強化
+### 新しいプロンプトの追加
 
-- より詳細なエラーコード
-- カスタムエラーメッセージ
-- バリデーションの追加
+```javascript
+prompts.push({
+    name: "code_review",
+    description: "Code review template",
+    arguments: [
+        {
+            name: "language",
+            description: "Programming language",
+            required: true
+        }
+    ]
+});
+```
 
-## 🐛 トラブルシューティング
-
-### サーバーが起動しない場合
-
-1. **Node.jsのインストール確認**
-   ```bash
-   node --version
-   ```
-
-2. **ファイルパスの確認**
-   ```bash
-   pwd
-   ls -la *.js
-   ```
-
-3. **実行権限の確認**
-   ```bash
-   ls -l server.js
-   chmod +x server.js
-   ```
-
-### JSON-RPCエラーが発生する場合
-
-1. **リクエストフォーマットの確認**
-   - `jsonrpc`フィールドが`"2.0"`であること
-   - `id`フィールドが存在すること
-   - `method`が正しいこと
-
-2. **パラメータの確認**
-   - 必須パラメータがすべて含まれているか
-   - データ型が正しいか
-
-## 📚 参考リンク
+## 📚 参考資料
 
 - [MCP仕様](https://spec.modelcontextprotocol.io/)
-- [JSON-RPC 2.0仕様](https://www.jsonrpc.org/specification)
+- [MCP SDKドキュメント](https://github.com/modelcontextprotocol/sdk)
 
 ## ライセンス
 
-このサンプルコードはMITライセンスで提供されています。
+MIT License
