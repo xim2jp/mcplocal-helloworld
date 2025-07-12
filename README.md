@@ -1,1 +1,0 @@
-# mcplocal-helloworld
